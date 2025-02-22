@@ -8,8 +8,12 @@
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
-            "program": "iGetPhotosAndVideos.py",
-            "console": "integratedTerminal"
+            "program": "iGetMyPhotosAndVideos_UI.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "__TEST__": "True"
+            },      
         }
     ]
 }

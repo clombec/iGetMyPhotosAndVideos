@@ -1,5 +1,5 @@
 """
-From https://github.com/adam-nemeth/iPhoneImport
+Base code from https://github.com/adam-nemeth/iPhoneImport
 """
 
 import argparse
@@ -8,10 +8,9 @@ import os
 import pathlib
 import re
 from datetime import datetime
-
 import win32utils
 from win32utils import CopyParams
-
+from infoBoxMgmt import print_message
 
 # changes "a" to "_" in "202301_a\IMG_1694.HEIC"
 def remove_letter_suffix_from_folder(filePath):
@@ -23,19 +22,18 @@ def load_already_imported_file_names(metadata_folder):
     already_imported_files_set = set()
     if metadata_folder is not None:
         if not os.path.exists(metadata_folder):
-            # TODO Create it
-            raise Exception(f"{metadata_folder} does not exist")
+            pathlib.Path(metadata_folder).mkdir(parents=True, exist_ok=True)
         if not os.path.isdir(metadata_folder):
             raise Exception(f"{metadata_folder} is not a folder")
         else:
             for filename in glob.glob(os.path.join(metadata_folder, "*.txt")):
-                print(f"Loading imported file list from '{filename}'")
+                print_message(f"Loading imported file list from '{filename}'")
                 with open(filename, "r") as file:
                     for line in file:
                         filename = line.strip()
                         amendedFilename = remove_letter_suffix_from_folder(filename)
                         already_imported_files_set.add(amendedFilename)
-    print(f"Loaded {len(already_imported_files_set)} imported files")
+    print_message(f"Loaded {len(already_imported_files_set)} imported files")
     return already_imported_files_set
 
 
@@ -86,38 +84,44 @@ def copy_using_windows_shell(shell_items_to_copy_by_target_path, destination_bas
 def write_imported_file_list_to_metadata_folder(metadata_folder, file_path_set):
     time_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     imported_files_metadata_path = os.path.join(metadata_folder, f"imported_{time_str}.txt")
-    print(f"Writing '{imported_files_metadata_path}'")
+    print_message(f"Writing '{imported_files_metadata_path}'")
     with open(imported_files_metadata_path, "w") as file:
         for filename in sorted(list(file_path_set)):
             file.write(f"{filename}\n")
 
 
-def iPhoneImportFiles(source, destination, metadata_folder):
-    # print(f"Program args: {args.__dict__}")
+def iPhoneImportFiles(source, destination):
+    # print_message(f"Program args: {args.__dict__}")
 
+    metadata_folder = destination + "\\.metadata"
     source_folder_absolute_display_name = source
     destination_path_str = destination
 
     already_imported_files_set = load_already_imported_file_names(metadata_folder)
 
-    source_folder_shell_folder = win32utils.get_shell_folder_from_absolute_display_name(
-        source_folder_absolute_display_name)
+    try:
+        source_folder_shell_folder = win32utils.get_shell_folder_from_absolute_display_name(
+            source_folder_absolute_display_name)
+    except Exception as e:
+        print_message(f"Error accessing iphone files: {e}")
+        return 'STATUS_NO_PHONE'
 
     source_shell_items_by_path = win32utils.walk_dcim(source_folder_shell_folder)
 
     imported_file_set, not_imported_file_set, shell_items_to_copy_by_target_path = resolve_items_to_import(
         source_folder_absolute_display_name, source_shell_items_by_path, already_imported_files_set)
 
-    print(f"Import {len(imported_file_set)} files")
+    print_message(f"Import {len(imported_file_set)} files")
 
     if len(shell_items_to_copy_by_target_path) > 0:
         copy_using_windows_shell(shell_items_to_copy_by_target_path, destination_path_str)
     else:
-        print(f"Nothing to copy")
+        print_message(f"Nothing to copy")
 
     if len(imported_file_set) > 0:
         write_imported_file_list_to_metadata_folder(metadata_folder, imported_file_set)
 
+    return 'STATUS_SUCCESS'
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

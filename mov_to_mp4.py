@@ -2,7 +2,7 @@ import subprocess
 import re
 import os
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from infoBoxMgmt import print_message
 
 # def convert_mov_to_mp4(mov_file_path):
 
@@ -13,14 +13,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def convert_one_file(mov_file_path, output_quality, mp4_path):
     command = f"ffmpeg -i {mov_file_path} -vcodec libx264 -crf {output_quality} -acodec aac -n {mp4_path}"
-    print(f'Convert file {mov_file_path}, with quality {output_quality}, to {mp4_path}')
+    print_message(f'Convert file {mov_file_path}, with quality {output_quality}, to {mp4_path}')
     try:
         subprocess.run(command, 
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error executing command : {e}")
+        print_message(f"Error executing command : {e}")
 
 def get_creation_time(file_path):
     try:
@@ -32,31 +32,25 @@ def get_creation_time(file_path):
             text=True
         )
 
-        # Rechercher la ligne contenant 'creationdate'
         creation_time_match = re.search(r'creationdate\s*: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', result.stderr)
 
         if not creation_time_match:
-            # Rechercher la ligne contenant 'creation_time'
-            creation_time_match = re.search(r'creation_date\s*: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', result.stderr)
+            creation_time_match = re.search(r'creation_time\s*: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', result.stderr)
 
         if creation_time_match:
             creation_time = creation_time_match.group(1)
-            print(f"Creation Time: {creation_time}")
+            print_message(f"Creation Time: {creation_time}")
             return creation_time[:19].split('T')
         else:
-            # Rechercher la ligne contenant 'creation_time'
-            creation_time_match = re.search(r'creation_date\s*: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', result.stderr)
-
-
-            print("Creation time not found in the output.")
+            print_message("Creation time not found in the output.")
             return None
 
     except Exception as e:
-        print(f"Erreur lors de la récupération des informations du fichier : {e}")
+        print_message(f"Erreur lors de la récupération des informations du fichier : {e}")
 
 def convert_mov_to_mp4(mov_file_path, destination_folder, output_quality ):
     video_info = get_creation_time(mov_file_path)
-    print(video_info)
+    print_message(video_info[0] + video_info[1])
     # output_path = video_info[0] + '_' + video_info[1].replace(':', '-') + '.mp4'
 
     year = video_info[0][:4]
@@ -74,7 +68,12 @@ def convert_mov_to_mp4(mov_file_path, destination_folder, output_quality ):
         mp4_path = os.path.join(year_folder, f"{base_name}_{counter}{extension}")
         counter += 1
 
-    convert_one_file(mov_file_path, output_quality, mp4_path)
+    try:
+        convert_one_file(mov_file_path, output_quality, mp4_path)
+        os.remove(mov_file_path)
+    except Exception as e:  
+        print_message(f"Error while converting file : {e}")
+
 
 
 def convert_folder_mov_to_mp4(input_folder, destination_folder, output_quality=28):
@@ -90,7 +89,7 @@ def convert_folder_mov_to_mp4(input_folder, destination_folder, output_quality=2
         logging.info("No MOV files found in the directory.")
         return 0
     else:
-        print(f"Number of files to convert: {total_files}")
+        print_message(f"Number of files to convert: {total_files}")
 
     # Convert files
     num_converted = 0
@@ -98,11 +97,12 @@ def convert_folder_mov_to_mp4(input_folder, destination_folder, output_quality=2
         convert_mov_to_mp4(os.path.join(input_folder, mov_file), destination_folder, output_quality)
         num_converted += 1
 
-    print(f"Conversion completed successfully. {num_converted} files converted from {input_folder}")
+    print_message(f"Conversion completed successfully. {num_converted} files converted from {input_folder}")
     return num_converted
 
 def convert_all_mov_to_mp4(in_folder, out_folder):
     num_converted = 0
     for root, _, _ in os.walk(in_folder):
+        # TODO not .metadata or other .xxxx folder
         num_converted += convert_folder_mov_to_mp4(root, out_folder)
-    print(f'Operation comlpeted. {num_converted} files converted')
+    print_message(f'Operation comlpeted. {num_converted} files converted')

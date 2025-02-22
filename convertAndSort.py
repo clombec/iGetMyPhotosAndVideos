@@ -9,14 +9,12 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image, UnidentifiedImageError
 from pillow_heif import register_heif_opener
+from infoBoxMgmt import print_message
 
 """
     This file converts HEIC to JPG from input folder,
     then renames and sorts all photos by Year in output folder
 """
-
-# Main directory path
-motherland = 'Z:\\Christophe\\Perso\\Photos\\Inputs\\iphone20250218\\Test'
 
 def is_directory_empty(directory):
     """
@@ -41,7 +39,7 @@ def delete_empty_directories(root_directory):
         for directory in dirs:
             full_path = os.path.join(root, directory)
             if is_directory_empty(full_path):
-                print(f"Deleting empty directory: {full_path}")
+                print_message(f"Deleting empty directory: {full_path}")
                 os.rmdir(full_path)
 
 def move_file_with_unique_name(file_path, destination_directory):
@@ -87,10 +85,8 @@ def move_files_and_delete_empty_dirs(main_directory):
             try:
                 os.rmdir(dir_path)
             except OSError as e:
-                print(f"Error deleting directory {dir_path}: {e}")
+                print_message(f"Error deleting directory {dir_path}: {e}")
 
-# Example usage
-# move_files_and_delete_empty_dirs(motherland)
 def get_exif_date(image_path):
     """
     Retrieve the capture date from the EXIF metadata of an image.
@@ -123,7 +119,7 @@ def process_photos(source_folder, destination_folder):
         # Get all JPG files in the specified directory
         jpg_files = [file for file in files if file.lower().endswith(".jpg")]
         total_files = len(jpg_files)
-        print(f'Number of JPG files in {root}: {total_files}')
+        print_message(f'Number of JPG files in {root}: {total_files}')
         num_converted = 0
         if total_files > 0:
             for filename in files:
@@ -150,12 +146,12 @@ def process_photos(source_folder, destination_folder):
                             # Display progress
                             num_converted += 1
                             progress = int((num_converted / total_files) * 100)
-                            print(f"Rename and move progress: {progress}%", end="\r", flush=True)
-                            # print(f"Renamed and saved: {jpg_path}")
+                            print_message(f"Rename and move progress: {progress}%", end="\r")
+                            # print_message(f"Renamed and saved: {jpg_path}")
                     except Exception as e:
-                        print(f"Error processing {current_path}: {e}")
+                        print_message(f"Error processing {current_path}: {e}")
     
-    print(f"\nRename and move completed successfully. {num_converted} files.")
+    print_message(f"\nRename and move completed successfully. {num_converted} files.")
 
 def convert_single_file(heic_path, jpg_path, output_quality):
     """
@@ -177,6 +173,7 @@ def convert_single_file(heic_path, jpg_path, output_quality):
             # Preserve the original access and modification timestamps
             heic_stat = os.stat(heic_path)
             os.utime(jpg_path, (heic_stat.st_atime, heic_stat.st_mtime))
+            os.remove(heic_path)
             return heic_path, True  # Successful conversion
     except (UnidentifiedImageError, FileNotFoundError, OSError) as e:
         logging.error("Error converting '%s': %s", heic_path, e)
@@ -198,11 +195,11 @@ def convert_heic_to_jpg(heic_dir, output_quality=50, max_workers=4):
         return
 
     # Create a directory to store the converted JPG files
-    jpg_dir = os.path.join(heic_dir, "ConvertedFiles")
+    jpg_dir = os.path.join(heic_dir, ".ConvertedFiles")
     if os.path.exists(jpg_dir):
         # user_input = input("Existing 'ConvertedFiles' folder detected. Delete and proceed? (y/n): ")
         # if user_input.lower() != 'y':
-        #     print("Conversion aborted.")
+        #     print_message("Conversion aborted.")
         #     return
         # else:
         shutil.rmtree(jpg_dir)
@@ -216,7 +213,7 @@ def convert_heic_to_jpg(heic_dir, output_quality=50, max_workers=4):
         logging.info("No HEIC files found in the directory.")
         return
     else:
-        print(f"Number of files to convert: {total_files}")
+        print_message(f"Number of files to convert: {total_files}")
 
     # Prepare file paths for conversion
     tasks = [(os.path.join(heic_dir, file_name), os.path.join(jpg_dir, os.path.splitext(file_name)[0] + ".jpg"))
@@ -236,19 +233,29 @@ def convert_heic_to_jpg(heic_dir, output_quality=50, max_workers=4):
                     num_converted += 1
                 # Display progress
                 progress = int((num_converted / total_files) * 100)
-                print(f"Conversion progress: {progress}%", end="\r", flush=True)
+                print_message(f"Conversion progress: {progress}%", end="\r")
             except Exception as e:
                 logging.error("Error occurred during conversion of '%s': %s", heic_file, e)
 
-    print(f"Conversion completed successfully. {num_converted} files converted from {heic_dir}")
+    print_message(f"Conversion completed successfully. {num_converted} files converted from {heic_dir}")
 
 def convert_heic_to_jpg_subfolders(pathin):
     for root, _, _ in os.walk(pathin):
-        convert_heic_to_jpg(root)
+        if not os.path.basename(root).startswith('.') or root == pathin:
+            # TODO: count total number of converted files
+            convert_heic_to_jpg(root)
 
-# Example usage
-# source_folder = motherland
-# destination_folder = 'Z:\\Christophe\\Perso\\Photos\\Inputs\\iphone20250218\\TestOutput'
-# convert_heic_to_jpg(source_folder, 50, 4)
+def sort_other_files(root, motherland):
+    for filename in os.listdir(root):
+        if not os.path.isdir(os.path.join(root, filename)):
+            print_message(f"Found file: {filename}")
+            if not os.path.exists(motherland):
+                os.makedirs(motherland)
+                print_message(f"Created directory: {motherland}")
+            shutil.move(os.path.join(root, filename), os.path.join(motherland, filename))
 
-# process_photos(source_folder, destination_folder)
+
+def sort_all_other_files(pathin, pathout):
+    for root, _, _ in os.walk(pathin):
+        if not os.path.basename(root).startswith('.') or root == pathin:
+            sort_other_files(root, pathout)

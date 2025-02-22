@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pythoncom
 from win32comext.shell import shell, shellcon
-
+from infoBoxMgmt import print_message
 
 @dataclass
 class CopyParams:
@@ -90,7 +90,7 @@ def copy_multiple_files(copy_params_list: list[CopyParams]):
         # print(f"Queuing copying '{src_str}' to '{dst_str}'")
         fileOperationObject.CopyItem(copy_params.sourcefile_shell_item, copy_params.destinationFolder_shell_item,
                                      copy_params.target_filename)
-    print(f"Running copy operations...")
+    print_message(f"Running copy operations...")
     fileOperationObject.PerformOperations()
 
 
