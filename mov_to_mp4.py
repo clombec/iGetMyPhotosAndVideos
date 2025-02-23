@@ -120,11 +120,11 @@ def convert_folder_mov_to_mp4(input_folder, destination_folder, output_quality=1
     print_message(f"Conversion completed successfully. {num_converted} files converted from {input_folder}")
     return num_converted, 'STATUS_SUCCESS'
 
-def convert_all_mov_to_mp4(in_folder, out_folder):
+def convert_all_mov_to_mp4(in_folder, out_folder, mp4quality):
     total_num_converted = 0
     for root, _, _ in os.walk(in_folder):
         if not os.path.basename(root).startswith('.') or root == in_folder:
-            num_converted, status = convert_folder_mov_to_mp4(root, out_folder)
+            num_converted, status = convert_folder_mov_to_mp4(root, out_folder, mp4quality)
             total_num_converted += num_converted
             if status != 'STATUS_SUCCESS':
                 print_message(f"Error converting files in {root}. {total_num_converted} files converted")

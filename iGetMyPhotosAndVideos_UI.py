@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 import iPhoneImport
 import convertAndSort
 import mov_to_mp4
-from infoBoxMgmt import set_info_box, print_message, print_message_d, display_status, clear_info_box
+from infoBoxMgmt import set_info_box, print_message, print_message_d, display_status, clear_info_box, set_debug_mode
 from threading import Thread
 
 
@@ -37,7 +37,7 @@ default_bg = None
 FUNCTIONS
 """
 
-def perform_actions(root, iPhoneFolder, filesFolder):
+def perform_actions(root, iPhoneFolder, filesFolder, mp4quality):
     global action_running
     def run_action():
         global action_running
@@ -72,7 +72,7 @@ def perform_actions(root, iPhoneFolder, filesFolder):
                     break
             if convert2_active:
                 print_message("Performing actions: convert mov to mp4")
-                status = mov_to_mp4.convert_all_mov_to_mp4(import_folder, filesFolder)
+                status = mov_to_mp4.convert_all_mov_to_mp4(import_folder, filesFolder, mp4quality)
                 display_status(status, "MOV to MP4 conversion")
                 if status != 'STATUS_SUCCESS':
                     break
@@ -120,6 +120,28 @@ def toggle_image(image_button, color_image, gray_image, state_variable):
         sort_active = not sort_active
         image_button.config(image=color_image if sort_active else gray_image)
 
+# Custom dialog box for options
+class OptionDialogBox(simpledialog.Dialog):
+    def __init__(self, parent, title=None, initial_value=False, initial_entry_value=10):
+        self.checkbox_var = tk.BooleanVar(value=initial_value)
+        self.entry_var = tk.IntVar(value=initial_entry_value)
+        super().__init__(parent, title)
+
+    def body(self, master):
+        #Add the checkbox
+        self.checkbox = tk.Checkbutton(master, text="Option", variable=self.checkbox_var)
+        self.checkbox.pack(padx=10, pady=10)
+
+        #Add the entry for an integer value
+        self.entry = tk.Entry(master, textvariable=self.entry_var)
+        self.entry.pack(padx=10, pady=10)
+        
+        #Return the Checkbutton widget for the initial focus
+        return self.checkbox
+
+    def apply(self):
+        self.result = (self.checkbox_var.get(), self.entry_var.get())
+
 def show_help():
     help_text = """
     This is a simple Conversion Manager application.
@@ -138,26 +160,24 @@ def show_help():
     """
     messagebox.showinfo("Help", help_text)
 
-def open_options_dialog():
-    # Create a simple dialog box with options
-    options = ["Option 1", "Option 2", "Option 3"]
-    choice = simpledialog.askstring("Choice", "Choose an option:", initialvalue=options[0])
-
-    # display the choice in a message box
-    if choice in options:
-        messagebox.showinfo("Choice", f"You chose: {choice}")
-    else:
-        messagebox.showwarning("Bad choice", "You'll burn in hell for that!")
-
 def create_gui():
+    def open_option_dialog():
+        dialog = OptionDialogBox(root, "Boîte de Dialogue Personnalisée", debug_state.get(), quality_state.get())
+        if dialog.result is not None:
+            debug_state.set(dialog.result[0])
+            quality_state.set(dialog.result[1])
+            set_debug_mode(dialog.result[0])
+
     global import_active, convert1_active, convert2_active, sort_active, info_box, default_bg
     # Set the default folder path for the iPhone
     iphone_default_path = "This PC\\Apple iPhone\\Internal Storage"
 
-
     # Create the main window
     root = tk.Tk()
     root.title("Conversion Manager")
+
+    debug_state = tk.BooleanVar()
+    quality_state = tk.IntVar(value=10)
 
     # Set a fixed window size
     root.geometry("520x520")
@@ -171,17 +191,16 @@ def create_gui():
     menubar = tk.Menu(root)
     root.config(menu=menubar)
 
+    # Create an file menu with optionand quit
+    file_menu = tk.Menu(menubar, tearoff=0)
+    menubar.add_cascade(label="File", menu=file_menu)
+    file_menu.add_command(label="Options", command=open_option_dialog)
+    file_menu.add_command(label="Exit", command=root.quit)
+
     # Create a Help menu
     help_menu = tk.Menu(menubar, tearoff=0)
     help_menu.add_command(label="Help", command=show_help)
-    menubar.add_cascade(label="Help", menu=help_menu)
-
-    # Create an file menu with optionand quit
-    file_menu = tk.Menu(menubar, tearoff=0)
-    file_menu.add_command(label="Exit", command=root.quit)
-    menubar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_command(label="Options", command=open_options_dialog)
-
+    menubar.add_cascade(label="About", menu=help_menu)
 
     # Configure grid weights for resizing
     root.grid_columnconfigure(1, weight=1)
@@ -228,7 +247,7 @@ def create_gui():
     sort_button.grid(row=2, column=3, padx=10, pady=10)
 
     # Create a "go" button to perform actions based on image states
-    tk.Button(root, image=go_image, command=lambda: perform_actions(root, entry1.get(), entry2.get())).grid(row=3, column=0, columnspan=3, pady=10)
+    tk.Button(root, image=go_image, command=lambda: perform_actions(root, entry1.get(), entry2.get(), quality_state.get())).grid(row=3, column=0, columnspan=3, pady=10)
 
     # Create a "clear" button to clear the info box
     tk.Button(root, image=delete_image, command=lambda: clear_info_box()).grid(row=3, column=3, pady=10, sticky="se")

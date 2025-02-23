@@ -68,3 +68,8 @@ def clear_info_box():
     global global_info_box
     if global_info_box:
         global_info_box.clear()
+
+def set_debug_mode(dm):
+    global global_info_box
+    if global_info_box:
+        global_info_box.debug = dm
