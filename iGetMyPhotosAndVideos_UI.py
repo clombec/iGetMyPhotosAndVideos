@@ -44,28 +44,50 @@ def perform_actions(root, iPhoneFolder, filesFolder):
     global action_running
     def run_action():
         global action_running
-        if not (import_active or convert1_active or convert2_active or sort_active):
-            print_message("No actions selected. Please select an action to perform.")
-        # Default import in filesFolder\.import --> Then conversion starts in this .import folder and sort in filesFolder
-        import_folder = filesFolder + '\\.import'
-        if import_active:
-            print_message("Performing actions: Import")
-            status = iPhoneImport.iPhoneImportFiles(iPhoneFolder, import_folder)
-            display_status(status)
-            if status != 'STATUS_SUCCESS':
-                return
-        if convert1_active: 
-            print_message("Performing actions: convert heic to jpg")
-            convertAndSort.convert_heic_to_jpg_subfolders(import_folder)
-            convertAndSort.process_photos(import_folder,filesFolder)
-            convertAndSort.delete_empty_directories(import_folder)
-        if convert2_active:
-            print_message("Performing actions: convert mov to mp4")
-            mov_to_mp4.convert_all_mov_to_mp4(import_folder, filesFolder)
-        if sort_active:
-            print_message("Performing actions: sort other files")
-            convertAndSort.sort_all_other_files(import_folder,filesFolder + '\\OtherFiles')
-        convertAndSort.delete_empty_directories(filesFolder)
+
+        #While True loop, to exit the loop with a break, instead of a return so that the action_running variable is reset
+        while True:
+            if not (import_active or convert1_active or convert2_active or sort_active):
+                print_message("No actions selected. Please select an action to perform.")
+                break
+            if filesFolder == "":
+                print_message("Please select an output folder.")
+                break   
+            # Default import in filesFolder\.import --> Then conversion starts in this .import folder and sort in filesFolder
+            import_folder = filesFolder + '\\.import'
+            if import_active:
+                print_message("Performing actions: Import")
+                status = iPhoneImport.iPhoneImportFiles(iPhoneFolder, import_folder)
+                display_status(status, "Import")
+                if status != 'STATUS_SUCCESS':
+                    break
+            if convert1_active: 
+                print_message("Performing actions: convert heic to jpg")
+                status = convertAndSort.convert_heic_to_jpg_subfolders(import_folder)
+                if status == 'STATUS_SUCCESS':
+                    status = convertAndSort.process_photos(import_folder,filesFolder)
+                if status == 'STATUS_SUCCESS':
+                    status = convertAndSort.delete_empty_directories(import_folder)
+                display_status(status, "HEIC to JPG conversion")
+                if status != 'STATUS_SUCCESS':
+                    break
+            if convert2_active:
+                print_message("Performing actions: convert mov to mp4")
+                status = mov_to_mp4.convert_all_mov_to_mp4(import_folder, filesFolder)
+                display_status(status, "MOV to MP4 conversion")
+                if status != 'STATUS_SUCCESS':
+                    break
+            if sort_active:
+                print_message("Performing actions: sort other files")
+                status = convertAndSort.sort_all_other_files(import_folder,filesFolder + '\\OtherFiles')
+                if status == 'STATUS_SUCCESS':
+                    print_message('Delete empty directories')
+                    status = convertAndSort.delete_empty_directories(filesFolder)
+                display_status(status, "Sort other files")
+                if status != 'STATUS_SUCCESS':
+                    break
+            break
+
         action_running = False
         root.configure(bg=default_bg)
 

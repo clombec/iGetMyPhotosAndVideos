@@ -3,7 +3,9 @@ import tkinter as tk
 
 errors_dict = {
     'STATUS_SUCCESS': 'Success',
-    'STATUS_NO_PHONE': 'Error : Phone folder not found'
+    'STATUS_ERROR': 'Error',
+    'STATUS_NO_PHONE': 'Error : Phone folder not found',
+    'STATUS_NO_DIR': 'Error : Directory not found'
 }
 
 global_info_box = None
@@ -42,8 +44,10 @@ def set_info_box(ib):
     gib = MyInfoBox(ib)
     global_info_box = gib
 
-def display_status(status):
-    print_message(errors_dict[status])
+def display_status(status, msg=None):
+    if msg is None:
+        msg = 'Action'
+    print_message(msg + ' ended with status: ' + errors_dict[status])
 
 def clear_info_box():
     global global_info_box

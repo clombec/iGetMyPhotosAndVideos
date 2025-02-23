@@ -55,7 +55,7 @@ def walk_dcim(shell_folder):
     for folder_pidl in shell_folder.EnumObjects(0, shellcon.SHCONTF_FOLDERS):
         child_shell_folder = shell_folder.BindToObject(folder_pidl, None, shell.IID_IShellFolder)
         name = shell_folder.GetDisplayNameOf(folder_pidl, shellcon.SHGDN_FORADDRESSBAR)
-        print(f"Listing folder '{name}'")
+        print_message(f"Listing folder '{name}'")
         result |= walk_dcim(child_shell_folder)
 
     for file_pidl in shell_folder.EnumObjects(0, shellcon.SHCONTF_NONFOLDERS):
@@ -91,7 +91,12 @@ def copy_multiple_files(copy_params_list: list[CopyParams]):
         fileOperationObject.CopyItem(copy_params.sourcefile_shell_item, copy_params.destinationFolder_shell_item,
                                      copy_params.target_filename)
     print_message(f"Running copy operations...")
-    fileOperationObject.PerformOperations()
+    try:
+        fileOperationObject.PerformOperations()
+    except BaseException as exception:
+        print_message(f"Error while copying files: {exception}")
+        fileOperationObject.AbortOperations()
+        
 
 
 def get_absolute_name(shell_item):

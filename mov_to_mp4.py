@@ -49,7 +49,12 @@ def get_creation_time(file_path):
         print_message(f"Erreur lors de la récupération des informations du fichier : {e}")
 
 def convert_mov_to_mp4(mov_file_path, destination_folder, output_quality ):
-    video_info = get_creation_time(mov_file_path)
+    try:
+        video_info = get_creation_time(mov_file_path)
+    except Exception as e:
+        print_message(f"Error while getting video info : {e}")
+        return 'STATUS_ERROR'
+    
     print_message(video_info[0] + video_info[1])
     # output_path = video_info[0] + '_' + video_info[1].replace(':', '-') + '.mp4'
 
@@ -57,8 +62,12 @@ def convert_mov_to_mp4(mov_file_path, destination_folder, output_quality ):
     new_filename = f"{video_info[0]}_{video_info[1].replace(':', '-')}.mp4"
 
     year_folder = os.path.join(destination_folder, year)
-    if not os.path.exists(year_folder):
-        os.makedirs(year_folder)
+    try:
+        if not os.path.exists(year_folder):
+            os.makedirs(year_folder)
+    except Exception as e:
+        print_message(f"Error while creating directory : {e}")
+        return 'STATUS_ERROR'
 
     mp4_path = os.path.join(year_folder, new_filename)
     base_name, extension = os.path.splitext(os.path.basename(mp4_path))
@@ -73,36 +82,45 @@ def convert_mov_to_mp4(mov_file_path, destination_folder, output_quality ):
         os.remove(mov_file_path)
     except Exception as e:  
         print_message(f"Error while converting file : {e}")
+        return 'STATUS_ERROR'
+    return 'STATUS_SUCCESS'
 
 
 
 def convert_folder_mov_to_mp4(input_folder, destination_folder, output_quality=28):
     
     if not os.path.isdir(input_folder):
-        logging.error("Directory '%s' does not exist.", input_folder)
-        return 0
+        print_message("Directory '%s' does not exist.", input_folder)
+        return 0, 'STATUS_NO_DIR'
 
     mov_files = [file for file in os.listdir(input_folder) if file.lower().endswith(".mov")]
     total_files = len(mov_files)
 
     if total_files == 0:
-        logging.info("No MOV files found in the directory.")
-        return 0
+        print_message("No MOV files found in the directory.")
+        return 0, 'STATUS_SUCCESS'
     else:
         print_message(f"Number of files to convert: {total_files}")
 
     # Convert files
     num_converted = 0
     for mov_file in mov_files:
-        convert_mov_to_mp4(os.path.join(input_folder, mov_file), destination_folder, output_quality)
+        if convert_mov_to_mp4(os.path.join(input_folder, mov_file), destination_folder, output_quality) != 'STATUS_SUCCESS':
+            print_message(f"Error converting file {mov_file}")
+            return num_converted, 'STATUS_ERROR' 
         num_converted += 1
 
     print_message(f"Conversion completed successfully. {num_converted} files converted from {input_folder}")
-    return num_converted
+    return num_converted, 'STATUS_SUCCESS'
 
 def convert_all_mov_to_mp4(in_folder, out_folder):
-    num_converted = 0
+    total_num_converted = 0
     for root, _, _ in os.walk(in_folder):
-        # TODO not .metadata or other .xxxx folder
-        num_converted += convert_folder_mov_to_mp4(root, out_folder)
-    print_message(f'Operation comlpeted. {num_converted} files converted')
+        if not os.path.basename(root).startswith('.') or root == in_folder:
+            num_converted, status = convert_folder_mov_to_mp4(root, out_folder)
+            total_num_converted += num_converted
+            if status != 'STATUS_SUCCESS':
+                print_message(f"Error converting files in {root}. {total_num_converted} files converted")
+                return status
+    print_message(f'Operation completed. {total_num_converted} files converted')
+    return 'STATUS_SUCCESS'
