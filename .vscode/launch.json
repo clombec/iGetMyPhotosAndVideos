@@ -10,9 +10,10 @@
             "request": "launch",
             "program": "iGetMyPhotosAndVideos_UI.py",
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "env": {
-                "__TEST__": "True"
+                "__TEST__": "True",
+                "__DEBUG__": "True"
             },      
         }
     ]

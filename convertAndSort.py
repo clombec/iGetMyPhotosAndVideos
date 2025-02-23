@@ -9,7 +9,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image, UnidentifiedImageError
 from pillow_heif import register_heif_opener
-from infoBoxMgmt import print_message
+from infoBoxMgmt import print_message, print_message_d
+
+fail_list = []
 
 """
     This file converts HEIC to JPG from input folder,
@@ -40,7 +42,7 @@ def delete_empty_directories(root_directory):
             for directory in dirs:
                 full_path = os.path.join(root, directory)
                 if is_directory_empty(full_path):
-                    print_message(f"Deleting empty directory: {full_path}")
+                    print_message_d(f"Deleting empty directory: {full_path}")
                     os.rmdir(full_path)
         except Exception as e:
             print_message(f"Error deleting directory {full_path}: {e}")
@@ -126,43 +128,43 @@ def process_photos(source_folder, destination_folder):
         return 'STATUS_ERROR'
 
     for root, _, files in os.walk(source_folder):
-        # Get all JPG files in the specified directory
-        jpg_files = [file for file in files if file.lower().endswith(".jpg")]
+        # Get all image files in the specified directory
+        jpg_files = [file for file in files if os.path.splitext(file)[1].lower() in ['.jpg', '.jpeg', '.png']]
         total_files = len(jpg_files)
-        print_message(f'Number of JPG files in {root}: {total_files}')
-        num_converted = 0
+        print_message_d(f'Number of image files in {root}: {total_files}')
+        num_moved = 0
         if total_files > 0:
             for filename in files:
-                if filename.lower().endswith('.jpg'):
+                file_ext = os.path.splitext(filename)[1].lower()
+                if file_ext in ['.jpg', '.jpeg', '.png']:
                     current_path = os.path.join(root, filename)
                     try:
                         date_taken = get_exif_date(current_path)
                         if date_taken:
                             year = date_taken[:4]
-                            new_filename = f"{date_taken.replace(':', '-').replace(' ', '_')}.jpg"
+                            new_filename = f"{date_taken.replace(':', '-').replace(' ', '_')}{file_ext}"
 
                             year_folder = os.path.join(destination_folder, year)
                             if not os.path.exists(year_folder):
                                 os.makedirs(year_folder)
 
-                            jpg_path = os.path.join(year_folder, new_filename)
-                            base_name, extension = os.path.splitext(os.path.basename(jpg_path))
+                            new_path = os.path.join(year_folder, new_filename)
+                            # base_name, extension = os.path.splitext(os.path.basename(new_path))
                             # Check if the file already exists in the destination directory
                             counter = 1
-                            while os.path.exists(jpg_path):
-                                jpg_path = os.path.join(year_folder, f"{base_name}_{counter}{extension}")
+                            while os.path.exists(new_path):
+                                new_path = os.path.join(year_folder, f"{new_filename}_{counter}{file_ext}")
                                 counter += 1
-                            os.rename(current_path, jpg_path)
+                            os.rename(current_path, new_path)
                             # Display progress
-                            num_converted += 1
-                            progress = int((num_converted / total_files) * 100)
-                            print_message(f"Rename and move progress: {progress}%", end="\r")
-                            # print_message(f"Renamed and saved: {jpg_path}")
+                            num_moved += 1
+                            # progress = int((num_moved / total_files) * 100)
+                            # print_message_d(f"Rename and move progress: {progress}%", end="\r")
                     except Exception as e:
                         print_message(f"Error processing {current_path}: {e}")
                         return 'STATUS_ERROR'
     
-    print_message(f"\nRename and move completed successfully. {num_converted} files.")
+    print_message(f"\nRename and move completed successfully. {num_moved} files.")
     return 'STATUS_SUCCESS'
 
 def convert_single_file(heic_path, jpg_path, output_quality):
@@ -222,10 +224,10 @@ def convert_heic_to_jpg(heic_dir, output_quality=50, max_workers=4):
     total_files = len(heic_files)
 
     if total_files == 0:
-        print_message("No HEIC files found in the directory.")
+        print_message_d("No HEIC files found in the directory.")
         return 'STATUS_SUCCESS'
     else:
-        print_message(f"Number of files to convert: {total_files}")
+        print_message_d(f"Number of files to convert: {total_files}")
 
     # Prepare file paths for conversion
     tasks = [(os.path.join(heic_dir, file_name), os.path.join(jpg_dir, os.path.splitext(file_name)[0] + ".jpg"))
@@ -245,11 +247,11 @@ def convert_heic_to_jpg(heic_dir, output_quality=50, max_workers=4):
                 if success:
                     num_converted += 1
                 # Display progress
-                progress = int((num_converted / total_files) * 100)
-                print_message(f"Conversion progress: {progress}%", end="\r")
+                # progress = int((num_converted / total_files) * 100)
+                # print_message_d(f"Conversion progress: {progress}%", end="\r")
             except Exception as e:
-                print_message("Error occurred during conversion of '%s': %s", heic_file, e)
-                return 'STATUS_ERROR'
+                print_message("Error occurred during conversion of '%s'", heic_file)
+                fail_list.append(heic_file)
 
     print_message(f"Conversion completed successfully. {num_converted} files converted from {heic_dir}")
     return 'STATUS_SUCCESS'
@@ -261,16 +263,17 @@ def convert_heic_to_jpg_subfolders(pathin):
             status = convert_heic_to_jpg(root)
             if status != 'STATUS_SUCCESS':
                 return status
-    return 'STATUS_SUCCESS'
+    return 'STATUS_SUCCESS', fail_list
+
 
 def sort_other_files(root, motherland):
     for filename in os.listdir(root):
         if not os.path.isdir(os.path.join(root, filename)):
             try:
-                print_message(f"Found file: {filename}")
+                print_message_d(f"Found file: {filename}")
                 if not os.path.exists(motherland):
                     os.makedirs(motherland)
-                    print_message(f"Created directory: {motherland}")
+                    print_message_d(f"Created directory: {motherland}")
                 shutil.move(os.path.join(root, filename), os.path.join(motherland, filename))
             except Exception as e:
                 print_message(f"Error moving file {filename}: {e}")

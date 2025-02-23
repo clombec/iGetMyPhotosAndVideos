@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pythoncom
 from win32comext.shell import shell, shellcon
-from infoBoxMgmt import print_message
+from infoBoxMgmt import print_message, print_message_d
 
 @dataclass
 class CopyParams:
@@ -39,12 +39,11 @@ def get_shell_folder_from_absolute_display_name(display_names):
             raise Exception(f"Cannot get shell folder for {display_names} (at '{folder}')") from exception
     return current_shell_folder
 
-
-# returns a shell item for a string path, e.g. "This PC\Apple iPhone\Internal Storage\DCIM\IMG_0091.JPG"
 def get_shell_item_from_path(path):
     try:
         return shell.SHCreateItemFromParsingName(path, None, shell.IID_IShellItem)
     except BaseException as exception:
+        print_message(f"Cannot get shell item for {path}: {exception}")
         raise Exception(f"Cannot get shell item for {path}") from exception
 
 
@@ -55,7 +54,7 @@ def walk_dcim(shell_folder):
     for folder_pidl in shell_folder.EnumObjects(0, shellcon.SHCONTF_FOLDERS):
         child_shell_folder = shell_folder.BindToObject(folder_pidl, None, shell.IID_IShellFolder)
         name = shell_folder.GetDisplayNameOf(folder_pidl, shellcon.SHGDN_FORADDRESSBAR)
-        print_message(f"Listing folder '{name}'")
+        print_message_d(f"Listing folder '{name}'")
         result |= walk_dcim(child_shell_folder)
 
     for file_pidl in shell_folder.EnumObjects(0, shellcon.SHCONTF_NONFOLDERS):
@@ -96,7 +95,7 @@ def copy_multiple_files(copy_params_list: list[CopyParams]):
     except BaseException as exception:
         print_message(f"Error while copying files: {exception}")
         fileOperationObject.AbortOperations()
-        
+
 
 
 def get_absolute_name(shell_item):

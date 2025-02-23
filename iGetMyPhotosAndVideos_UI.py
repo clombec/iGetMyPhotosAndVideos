@@ -1,13 +1,12 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, Scrollbar, messagebox
+from tkinter import simpledialog
 from PIL import Image, ImageTk
 import iPhoneImport
 import convertAndSort
 import mov_to_mp4
-from infoBoxMgmt import set_info_box
-from infoBoxMgmt import display_status
-from infoBoxMgmt import clear_info_box
+from infoBoxMgmt import set_info_box, print_message, print_message_d, display_status, clear_info_box
 from threading import Thread
 
 
@@ -16,8 +15,11 @@ ENVIRONMENT VARIABLES
 """
 
 __TEST__ = False
+__DEBUG__ = False
 if os.getenv('__TEST__') == 'True':
     __TEST__ = True
+if os.getenv('__DEBUG__') == 'True':
+    __DEBUG__ = True
 
 """
 GLOBAL VARIABLES
@@ -34,11 +36,6 @@ default_bg = None
 """
 FUNCTIONS
 """
-
-def print_message(msg):
-    global info_box
-    info_box.insert(tk.END, msg + "\n")
-    info_box.see(tk.END)  # Scroll to the end to show the latest text    
 
 def perform_actions(root, iPhoneFolder, filesFolder):
     global action_running
@@ -63,8 +60,10 @@ def perform_actions(root, iPhoneFolder, filesFolder):
                     break
             if convert1_active: 
                 print_message("Performing actions: convert heic to jpg")
-                status = convertAndSort.convert_heic_to_jpg_subfolders(import_folder)
+                status, fail_list = convertAndSort.convert_heic_to_jpg_subfolders(import_folder)
                 if status == 'STATUS_SUCCESS':
+                    if len(fail_list) > 0:
+                        print_message(f"Failed to convert {" ".join(map(str, fail_list))} files. Check the debug log for details.")
                     status = convertAndSort.process_photos(import_folder,filesFolder)
                 if status == 'STATUS_SUCCESS':
                     status = convertAndSort.delete_empty_directories(import_folder)
@@ -101,7 +100,7 @@ def perform_actions(root, iPhoneFolder, filesFolder):
         conversion_thread.start()
         
 def browse_folder(entry_widget):
-    folder_selected = filedialog.askdirectory()
+    folder_selected = filedialog.askdirectory().replace("/", "\\")
     if folder_selected:
         entry_widget.delete(0, tk.END)
         entry_widget.insert(0, folder_selected)
@@ -139,6 +138,17 @@ def show_help():
     """
     messagebox.showinfo("Help", help_text)
 
+def open_options_dialog():
+    # Create a simple dialog box with options
+    options = ["Option 1", "Option 2", "Option 3"]
+    choice = simpledialog.askstring("Choice", "Choose an option:", initialvalue=options[0])
+
+    # display the choice in a message box
+    if choice in options:
+        messagebox.showinfo("Choice", f"You chose: {choice}")
+    else:
+        messagebox.showwarning("Bad choice", "You'll burn in hell for that!")
+
 def create_gui():
     global import_active, convert1_active, convert2_active, sort_active, info_box, default_bg
     # Set the default folder path for the iPhone
@@ -152,7 +162,10 @@ def create_gui():
     # Set a fixed window size
     root.geometry("520x520")
     root.resizable(False, True)
-    root.minsize(width=520, height=250)  # Set minimum width and height
+    if __DEBUG__:
+        root.minsize(width=2000, height=1200)  # Set width and height
+    else:
+        root.minsize(width=520, height=250)  # Set width and height
 
     # Create a menu bar
     menubar = tk.Menu(root)
@@ -162,6 +175,13 @@ def create_gui():
     help_menu = tk.Menu(menubar, tearoff=0)
     help_menu.add_command(label="Help", command=show_help)
     menubar.add_cascade(label="Help", menu=help_menu)
+
+    # Create an file menu with optionand quit
+    file_menu = tk.Menu(menubar, tearoff=0)
+    file_menu.add_command(label="Exit", command=root.quit)
+    menubar.add_cascade(label="File", menu=file_menu)
+    file_menu.add_command(label="Options", command=open_options_dialog)
+
 
     # Configure grid weights for resizing
     root.grid_columnconfigure(1, weight=1)
@@ -173,7 +193,7 @@ def create_gui():
     entry1.grid(row=0, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
     entry1.insert(0, iphone_default_path)
     if __TEST__:
-        entry1.insert(len(iphone_default_path), "\\202003__")
+        entry1.insert(len(iphone_default_path), "\\202402__")
     tk.Button(root, text="Browse", command=lambda: browse_folder(entry1)).grid(row=0, column=3, padx=10, pady=5, sticky="e")
 
     tk.Label(root, text="Output path:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
@@ -217,7 +237,12 @@ def create_gui():
     info_box = tk.Text(root, height=1, width=70)
     info_box.grid(row=4, column=0, columnspan=4, pady=10, sticky="nsew")
 
-    set_info_box(info_box)
+    if __DEBUG__:
+        display_debug = True
+    else:
+        display_debug = False
+
+    set_info_box(info_box, display_debug)
 
     # Configure the text box to expand vertically
     root.grid_rowconfigure(4, weight=1)
