@@ -128,15 +128,17 @@ class OptionDialogBox(simpledialog.Dialog):
         super().__init__(parent, title)
 
     def body(self, master):
-        #Add the checkbox
-        self.checkbox = tk.Checkbutton(master, text="Option", variable=self.checkbox_var)
-        self.checkbox.pack(padx=10, pady=10)
+        # Add the checkbox
+        self.checkbox = tk.Checkbutton(master, text="Debug", variable=self.checkbox_var, anchor="w")
+        self.checkbox.pack(padx=10, pady=15, anchor="w")
 
-        #Add the entry for an integer value
+        # Add the entry for an integer value
+        self.qlabel = tk.Label(master, text="MP4 Quality [1-31] (1 is higher quality):")
+        self.qlabel.pack(padx=10, pady=0)
         self.entry = tk.Entry(master, textvariable=self.entry_var)
-        self.entry.pack(padx=10, pady=10)
+        self.entry.pack(padx=10, pady=0)
         
-        #Return the Checkbutton widget for the initial focus
+        # Return the Checkbutton widget for the initial focus
         return self.checkbox
 
     def apply(self):
@@ -162,7 +164,7 @@ def show_help():
 
 def create_gui():
     def open_option_dialog():
-        dialog = OptionDialogBox(root, "Boîte de Dialogue Personnalisée", debug_state.get(), quality_state.get())
+        dialog = OptionDialogBox(root, "Options", debug_state.get(), quality_state.get())
         if dialog.result is not None:
             debug_state.set(dialog.result[0])
             quality_state.set(dialog.result[1])
@@ -257,11 +259,11 @@ def create_gui():
     info_box.grid(row=4, column=0, columnspan=4, pady=10, sticky="nsew")
 
     if __DEBUG__:
-        display_debug = True
+        debug_state.set(True)
     else:
-        display_debug = False
+        debug_state.set(False)
 
-    set_info_box(info_box, display_debug)
+    set_info_box(info_box, debug_state.get())
 
     # Configure the text box to expand vertically
     root.grid_rowconfigure(4, weight=1)

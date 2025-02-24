@@ -14,6 +14,10 @@ class MyInfoBox:
     def __init__(self, text_box, debug_mode=False):
         self.text_box = text_box
         self.debug = debug_mode
+        # Configure color tags
+        self.text_box.tag_configure("green", foreground="#00FF00")
+        self.text_box.tag_configure("red", foreground="#FF0000")
+        self.text_box.tag_configure("gray", foreground="#666666")
 
     def clear(self):
         """
@@ -47,7 +51,7 @@ def print_message(msg, end='\n'):
 def print_message_d(msg, end='\n'):
     global global_info_box
     if global_info_box and global_info_box.debug:
-        global_info_box.append(msg + end, '#666666')        
+        global_info_box.append(msg + end, 'gray')        
 
 def set_info_box(ib, dm):
     global global_info_box
@@ -56,13 +60,13 @@ def set_info_box(ib, dm):
 
 def display_status(status, msg=None):
     if status == 'STATUS_SUCCESS':
-        color = '#00FF00'
+        color = 'green'
     else:
-        color = '#FF0000'
+        color = 'red'
     if msg is None:
         msg = 'Action'
     if global_info_box:
-        global_info_box.append(f'{msg}  ended with status: {errors_dict[status]} \n', color)
+        global_info_box.append(f'{msg} ended with status: {errors_dict[status]} \n', color)
 
 def clear_info_box():
     global global_info_box

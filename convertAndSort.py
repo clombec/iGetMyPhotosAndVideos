@@ -283,7 +283,7 @@ def sort_other_files(root, motherland):
 
 def sort_all_other_files(pathin, pathout):
     for root, _, _ in os.walk(pathin):
-        if not os.path.basename(root).startswith('.') or root == pathin:
+        if os.path.basename(root) != '.metadata':
             status = sort_other_files(root, pathout)
             if status != 'STATUS_SUCCESS':
                 return status
