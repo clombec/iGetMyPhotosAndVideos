@@ -127,12 +127,12 @@ def process_photos(source_folder, destination_folder):
         print_message(f"Error creating directory {destination_folder}: {e}")
         return 'STATUS_ERROR'
 
+    num_moved = 0
     for root, _, files in os.walk(source_folder):
         # Get all image files in the specified directory
         jpg_files = [file for file in files if os.path.splitext(file)[1].lower() in ['.jpg', '.jpeg', '.png']]
         total_files = len(jpg_files)
         print_message_d(f'Number of image files in {root}: {total_files}')
-        num_moved = 0
         if total_files > 0:
             for filename in files:
                 file_ext = os.path.splitext(filename)[1].lower()
@@ -149,11 +149,11 @@ def process_photos(source_folder, destination_folder):
                                 os.makedirs(year_folder)
 
                             new_path = os.path.join(year_folder, new_filename)
-                            # base_name, extension = os.path.splitext(os.path.basename(new_path))
+                            base_name, extension = os.path.splitext(os.path.basename(new_path))
                             # Check if the file already exists in the destination directory
                             counter = 1
                             while os.path.exists(new_path):
-                                new_path = os.path.join(year_folder, f"{new_filename}_{counter}{file_ext}")
+                                new_path = os.path.join(year_folder, f"{base_name}_{counter}{file_ext}")
                                 counter += 1
                             os.rename(current_path, new_path)
                             # Display progress

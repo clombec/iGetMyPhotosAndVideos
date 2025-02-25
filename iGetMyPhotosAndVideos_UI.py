@@ -179,15 +179,15 @@ def create_gui():
     root.title("Conversion Manager")
 
     debug_state = tk.BooleanVar()
-    quality_state = tk.IntVar(value=10)
+    quality_state = tk.IntVar(value=8)
 
     # Set a fixed window size
     root.geometry("520x520")
-    root.resizable(False, True)
+    root.resizable(True, True)
     if __DEBUG__:
-        root.minsize(width=2000, height=1200)  # Set width and height
+        root.minsize(width=1000, height=520)  # Set width and height
     else:
-        root.minsize(width=520, height=250)  # Set width and height
+        root.minsize(width=520, height=350)  # Set width and height
 
     # Create a menu bar
     menubar = tk.Menu(root)
@@ -205,12 +205,16 @@ def create_gui():
     menubar.add_cascade(label="About", menu=help_menu)
 
     # Configure grid weights for resizing
-    root.grid_columnconfigure(1, weight=1)
+    root.grid_columnconfigure(0, weight=1, minsize=100)
+    root.grid_columnconfigure(1, weight=1, minsize=100)
+    root.grid_columnconfigure(2, weight=1, minsize=100)
+    root.grid_columnconfigure(3, weight=1, minsize=100)
     root.grid_rowconfigure(4, weight=1)
+    root.grid_columnconfigure(4, weight=1)
 
     # Create labels and entry fields for folder paths
     tk.Label(root, text="Input path:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-    entry1 = tk.Entry(root, width=50)
+    entry1 = tk.Entry(root, width=30)
     entry1.grid(row=0, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
     entry1.insert(0, iphone_default_path)
     if __TEST__:
@@ -218,7 +222,7 @@ def create_gui():
     tk.Button(root, text="Browse", command=lambda: browse_folder(entry1)).grid(row=0, column=3, padx=10, pady=5, sticky="e")
 
     tk.Label(root, text="Output path:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-    entry2 = tk.Entry(root, width=50)
+    entry2 = tk.Entry(root, width=30)
     entry2.grid(row=1, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
     if __TEST__:
         entry2.insert(0, "D:\\Projects\\iGetMyPhotos\\TestFolder\\TestUI")
@@ -243,7 +247,7 @@ def create_gui():
     convert1_button.grid(row=2, column=1, padx=10, pady=10)
 
     convert2_button = tk.Button(root, image=gray_photo_images[2], command=lambda: toggle_image(convert2_button, photo_images[2], gray_photo_images[2], "convert2_active"))
-    convert2_button.grid(row=2, column=2, padx=10, pady=10)
+    convert2_button.grid(row=2, column=2, padx=10, pady=10) 
 
     sort_button = tk.Button(root, image=gray_photo_images[3], command=lambda: toggle_image(sort_button, photo_images[3], gray_photo_images[3], "sort_active"))
     sort_button.grid(row=2, column=3, padx=10, pady=10)
@@ -256,7 +260,7 @@ def create_gui():
 
     # Create a Text box with a scrollbar
     info_box = tk.Text(root, height=1, width=70)
-    info_box.grid(row=4, column=0, columnspan=4, pady=10, sticky="nsew")
+    info_box.grid(row=4, column=0, columnspan=5, pady=10, sticky="nsew")
 
     if __DEBUG__:
         debug_state.set(True)
@@ -265,12 +269,8 @@ def create_gui():
 
     set_info_box(info_box, debug_state.get())
 
-    # Configure the text box to expand vertically
-    root.grid_rowconfigure(4, weight=1)
-    # root.grid_columnconfigure(1, weight=1)
-
     scrollbar = Scrollbar(root, command=info_box.yview)
-    scrollbar.grid(row=4, column=4, sticky="ns")
+    scrollbar.grid(row=4, column=5, sticky="ns")
     info_box['yscrollcommand'] = scrollbar.set
 
     default_bg = root.cget("bg")
