@@ -1,0 +1,1 @@
+pyinstaller iGetMyPhotosAndVideos_UI.spec

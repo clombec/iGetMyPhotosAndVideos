@@ -8,7 +8,7 @@ import convertAndSort
 import mov_to_mp4
 from infoBoxMgmt import set_info_box, print_message, print_message_d, display_status, clear_info_box, set_debug_mode
 from threading import Thread
-
+import sys
 
 """
 ENVIRONMENT VARIABLES
@@ -32,6 +32,14 @@ sort_active = False
 
 action_running = False
 default_bg = None
+
+
+if getattr(sys, 'frozen', False):
+    # If the script is run as executable
+    base_path = sys._MEIPASS
+else:
+    # If the script is run normally with python
+    base_path = os.path.abspath(".")    
 
 """
 FUNCTIONS
@@ -147,13 +155,13 @@ class OptionDialogBox(simpledialog.Dialog):
 def show_help():
     # Paths to the images
     image_paths = [
-        "",
-        "Images/Gooo.jpg",
-        "Images/imageImport.jpg",
-        "Images/HeicToJpg.jpg",
-        "Images/MovToMp4.jpg",
-        "Images/SortPhotos.jpg",
-        "Images/DeleteHistory.jpg"
+        '',
+        os.path.join(base_path, 'Images', 'Gooo.jpg'),
+        os.path.join(base_path, 'Images', 'imageImport.jpg'),
+        os.path.join(base_path, 'Images', 'HeicToJpg.jpg'),
+        os.path.join(base_path, 'Images', 'MovToMp4.jpg'),
+        os.path.join(base_path, 'Images', 'SortPhotos.jpg'),
+        os.path.join(base_path, 'Images', 'DeleteHistory.jpg')
     ]   
 
     # Corresponding descriptions
@@ -251,6 +259,9 @@ def create_gui():
     root = tk.Tk()
     root.title("Conversion Manager")
 
+    # Define icon
+    root.iconbitmap(os.path.join(base_path, 'Images', 'icon2.ico'))
+
     debug_state = tk.BooleanVar()
     quality_state = tk.IntVar(value=8)
 
@@ -302,7 +313,7 @@ def create_gui():
     tk.Button(root, text="Browse", command=lambda: browse_folder(entry2)).grid(row=1, column=3, padx=10, pady=5, sticky="e")
 
     # Load the images for the buttons
-    image_paths = ["Images/imageImport.jpg", "Images/HeicToJpg.jpg", "Images/MovToMp4.jpg", "Images/SortPhotos.jpg", "Images/Gooo.jpg", "Images/DeleteHistory.jpg"]
+    image_paths = [os.path.join(base_path, 'Images', 'imageImport.jpg'), os.path.join(base_path, 'Images', 'HeicToJpg.jpg'), os.path.join(base_path, 'Images', 'MovToMp4.jpg'), os.path.join(base_path, 'Images', 'SortPhotos.jpg'), os.path.join(base_path, 'Images', 'Gooo.jpg'), os.path.join(base_path, 'Images', 'DeleteHistory.jpg')]
     images = [Image.open(path).resize((100, 100), Image.LANCZOS) for path in image_paths]
     gray_images = [Image.open(path).convert("L").resize((100, 100), Image.LANCZOS) for path in image_paths]
 
