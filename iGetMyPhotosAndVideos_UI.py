@@ -145,22 +145,95 @@ class OptionDialogBox(simpledialog.Dialog):
         self.result = (self.checkbox_var.get(), self.entry_var.get())
 
 def show_help():
-    help_text = """
-    This is a simple Conversion Manager application.
+    # Paths to the images
+    image_paths = [
+        "",
+        "Images/Gooo.jpg",
+        "Images/imageImport.jpg",
+        "Images/HeicToJpg.jpg",
+        "Images/MovToMp4.jpg",
+        "Images/SortPhotos.jpg",
+        "Images/DeleteHistory.jpg"
+    ]   
 
-    Functions:
-    - Import: Simulates importing data.
-    - Convert 1: Simulates converting data (e.g., HEIC to JPG).
-    - Convert 2: Simulates converting data (e.g., MOV to MP4).
-    - Sort Photos: Simulates sorting photos.
-    - Import All: Performs selected actions based on active images.
+    # Corresponding descriptions
+    descriptions = [
+        """iGetMyPhotosAndVideos is an import and Conversion Manager application for iPhone photos.""",
+        """     The usage is: select functions with described below buttons. Colored button = active function.
+                Click on Gooo to launch the functions.
+                The functions are:""",
+        """
+        Imports files from iPhone, located in \"This PC\\Apple iPhone\\Internal Storage\".
+        This is the default path for iPhone photos. It can be changed manually: the 
+        open folder dialog box on Windows doesn't allow to navigate through these files.
+        This folder can be changed to any other folder, not necessarily iPhone.
+        This funciton will import all files from the folder and its subfolders to the 
+        output folder, in a .import subfolder.
+        In this .import subfolder, a new folder named .metadata will be created, containing
+        a list of all imported files, so the next time the import is run, only new files
+        will be imported.""",
+"""     Converts files from HEIC to JPG format. It will convert all files in the .import
+                folder and its subfolders. The converted files will be placed in the output folder,
+                in subfolders with the name of the photo's year""",
+        """     Converts files from MOV to MP4 format. It will convert all files in the .import
+                folder and its subfolders. The converted files will be placed in the output folder,
+                in subfolders with the name of the video's year""",
+        """     Sorts all files which have not been already converted and sorted. If photos, they 
+                will be placed in the output folder, in subfolders with the name of the photo's year.
+                Otherwise they will be moved to a subfolder named OtherFiles.""",
+        """     Delete History: clear the info box."""
+    ]    
 
-    Usage:
-    - Enter folder paths and click 'Browse' to select directories.
-    - Click on the images to toggle actions.
-    - Check the info box for logs and messages.
-    """
-    messagebox.showinfo("Help", help_text)
+    # Create a help window
+    help_window = tk.Toplevel()
+    help_window.title("Application Help")
+
+    # Create a frame for images and descriptions
+    frame = tk.Frame(help_window)
+    frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+    # Add images and descriptions
+    for i, (path, desc) in enumerate(zip(image_paths, descriptions)):
+        try:
+            # Create a frame for each image-description pair
+            row_frame = tk.Frame(frame)
+            row_frame.pack(anchor='w', pady=5, fill=tk.X, expand=True)
+
+            # Load and resize the image if path is not empty
+            if path != "":
+                image = Image.open(path)
+                if i == len(image_paths) - 1:  # Last row
+                    image.thumbnail((50, 50))  # Smaller size for the last image
+                elif i == 1:
+                    image.thumbnail((200, 100))
+                else:
+                    image.thumbnail((100, 100))
+                photo = ImageTk.PhotoImage(image)
+
+                if i == len(image_paths) - 1 or i == 1:  # Last row
+                    # Add the description first
+                    description_label = tk.Label(row_frame, text=desc, justify=tk.LEFT,)
+                    description_label.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+                    # Add the image to the right
+                    image_label = tk.Label(row_frame, image=photo)
+                    image_label.image = photo  # Keep a reference
+                    image_label.pack(side=tk.RIGHT)
+                else:
+                    # Add the image
+                    image_label = tk.Label(row_frame, image=photo)
+                    image_label.image = photo  # Keep a reference
+                    image_label.pack(side=tk.LEFT)
+                    # Add the description
+                    description_label = tk.Label(row_frame, text=desc, justify=tk.LEFT)
+                    description_label.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+            else:
+                # Add the description only
+                description_label = tk.Label(row_frame, text=desc, justify=tk.LEFT, height=1)
+                description_label.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+
+        except Exception as e:
+            print(f"Unable to load image: {path}\nError: {e}")
+
 
 def create_gui():
     def open_option_dialog():
